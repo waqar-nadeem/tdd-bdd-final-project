@@ -14,15 +14,8 @@
 
 """
 Test cases for Product Model
-
-Test cases can be run with:
-    nosetests
-    coverage report -m
-
-While debugging just these tests it's convenient to use this:
-    nosetests --stop tests/test_models.py:TestProductModel
-
 """
+
 import os
 import logging
 import unittest
@@ -35,11 +28,9 @@ DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
-
 ######################################################################
 #  P R O D U C T   M O D E L   T E S T   C A S E S
 ######################################################################
-# pylint: disable=too-many-public-methods
 class TestProductModel(unittest.TestCase):
     """Test Cases for Product Model"""
 
@@ -59,7 +50,7 @@ class TestProductModel(unittest.TestCase):
 
     def setUp(self):
         """This runs before each test"""
-        db.session.query(Product).delete()  # clean up the last tests
+        db.session.query(Product).delete()
         db.session.commit()
 
     def tearDown(self):
@@ -72,7 +63,13 @@ class TestProductModel(unittest.TestCase):
 
     def test_create_a_product(self):
         """It should Create a product and assert that it exists"""
-        product = Product(name="Fedora", description="A red hat", price=12.50, available=True, category=Category.CLOTHS)
+        product = Product(
+            name="Fedora",
+            description="A red hat",
+            price=12.50,
+            available=True,
+            category=Category.CLOTHS,
+        )
         self.assertEqual(str(product), "<Product Fedora id=[None]>")
         self.assertTrue(product is not None)
         self.assertEqual(product.id, None)
@@ -89,11 +86,9 @@ class TestProductModel(unittest.TestCase):
         product = ProductFactory()
         product.id = None
         product.create()
-        # Assert that it was assigned an id and shows up in the database
         self.assertIsNotNone(product.id)
         products = Product.all()
         self.assertEqual(len(products), 1)
-        # Check that it matches the original product
         new_product = products[0]
         self.assertEqual(new_product.name, product.name)
         self.assertEqual(new_product.description, product.description)
@@ -101,6 +96,59 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(new_product.available, product.available)
         self.assertEqual(new_product.category, product.category)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
+    def test_read_a_product(self):
+        """It should Read a product from the database"""
+        product = ProductFactory()
+        product.create()
+        found = Product.find(product.id)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.name, product.name)
+
+    def test_update_a_product(self):
+        """It should Update a product in the database"""
+        product = ProductFactory()
+        product.create()
+        product.name = "Updated Name"
+        product.update()
+        updated = Product.find(product.id)
+        self.assertEqual(updated.name, "Updated Name")
+
+    def test_delete_a_product(self):
+        """It should Delete a product from the database"""
+        product = ProductFactory()
+        product.create()
+        product_id = product.id
+        product.delete()
+        deleted = Product.find(product_id)
+        self.assertIsNone(deleted)
+
+    def test_list_all_products(self):
+        """It should List all products"""
+        ProductFactory().create()
+        ProductFactory().create()
+        products = Product.all()
+        self.assertEqual(len(products), 2)
+
+    def test_find_by_name(self):
+        """It should Find products by name"""
+        product = ProductFactory(name="Laptop")
+        product.create()
+        results = Product.find_by_name("Laptop").all()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "Laptop")
+
+    def test_find_by_category(self):
+        """It should Find products by category"""
+        product = ProductFactory(category=Category.ELECTRONICS)
+        product.create()
+        results = Product.find_by_category(Category.ELECTRONICS).all()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].category, Category.ELECTRONICS)
+
+    def test_find_by_availability(self):
+        """It should Find products by availability"""
+        product = ProductFactory(available=True)
+        product.create()
+        results = Product.find_by_availability(True).all()
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].available)
